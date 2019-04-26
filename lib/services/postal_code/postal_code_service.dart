@@ -15,9 +15,16 @@ class AddressResult {
 
 class PostalCodeService {
   Observable<AddressResult> fetchAddress(String postalCode) {
-    final url = 'http://cep.republicavirtual.com.br/web_cep.php?cep=$postalCode&formato=jsonp';
+    final stream = fetchAddressAsStream(postalCode);
+    return Observable(stream);
+  }
+
+  Stream<AddressResult> fetchAddressAsStream(String postalCode) {
+    final url =
+        'http://cep.republicavirtual.com.br/web_cep.php?cep=$postalCode&formato=jsonp';
     final response = Dio().get<Map>(url);
-    return Observable(response.asStream())
+    return response
+        .asStream()
         .map((response) => AddressResult.fromJSON(response.data));
   }
 }

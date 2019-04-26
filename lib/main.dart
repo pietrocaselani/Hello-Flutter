@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hello/address/address_page.dart';
 import 'package:hello/postal_code/postal_code_page.dart';
-import 'package:hello/services/postal_code/PostalCodeService.dart';
+import 'package:hello/services/postal_code/postal_code_service.dart';
 
 void main() => runApp(MyApp());
 

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:hello/address/address.dart';
+import 'package:hello/address/address_interactor.dart';
 import 'package:hello/main.dart';
 import 'package:hello/postal_code/postal_code.dart';
-import 'package:hello/services/postal_code/PostalCodeService.dart';
 import 'package:rxdart/rxdart.dart';
 
 class AddressPage extends StatelessWidget {
@@ -38,67 +41,82 @@ class _AddressScreen extends StatefulWidget {
 }
 
 class _AddressScreenState extends State<_AddressScreen> {
-  Address address;
-  bool loading = true;
-  String errorMessage;
+  final _streamController = StreamController<_ViewState>();
 
   @override
   void initState() {
     super.initState();
 
-    widget.interactor.fetchAddress(widget.postalCode).listen(
-        (addressParam) => setState(() {
-              this.loading = false;
-              this.address = addressParam;
-            }),
-        onError: (error) => setState(() {
-              this.loading = false;
-              this.errorMessage = error.toString();
-            }));
+    final stream = widget.interactor
+        .fetchAddress(widget.postalCode)
+        .map((address) => _ViewState.address(address))
+        .onErrorResume((error) => Observable.just(_ViewState.error(error)));
+
+    _streamController.addStream(stream, cancelOnError: false);
+  }
+
+  @override
+  void dispose() {
+    _streamController.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return _loadingWidget();
+    return Container(
+        child: StreamBuilder<_ViewState>(
+            initialData: _ViewState.loading(widget.postalCode),
+            stream: _streamController.stream,
+            builder: (context, snapshot) => snapshot.data.build(context)));
+  }
+}
 
-    if (errorMessage != null) return _errorWidget();
-
-    if (address != null) return _addressWidget();
-
-    return Text('WTF: What a terrible failure!');
+abstract class _ViewState {
+  static _ViewState address(Address address) {
+    return _AddressViewState(address);
   }
 
-  Widget _loadingWidget() {
-    final message = 'Buscando endereço para CEP ${widget.postalCode}';
+  static _ViewState error(dynamic error) {
+    return _ErrorViewState(error);
+  }
+
+  static _ViewState loading(String postalCode) {
+    return _LoadingViewState(postalCode);
+  }
+
+  Widget build(BuildContext context);
+}
+
+class _AddressViewState extends _ViewState {
+  final Address _address;
+
+  _AddressViewState(this._address);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text(_address.street));
+  }
+}
+
+class _ErrorViewState extends _ViewState {
+  final dynamic _error;
+
+  _ErrorViewState(this._error);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text(_error.toString()));
+  }
+}
+
+class _LoadingViewState extends _ViewState {
+  final String _postalCode;
+
+  _LoadingViewState(this._postalCode);
+
+  @override
+  Widget build(BuildContext context) {
+    final message = 'Buscando endereço para CEP $_postalCode';
     return Center(child: Text(message));
-  }
-
-  Widget _errorWidget() {
-    return Center(child: Text(errorMessage));
-  }
-
-  Widget _addressWidget() {
-    return Center(child: Text(address.street));
-  }
-}
-
-class Address {
-  final String state, city, neighborhood, street, type;
-
-  Address(this.state, this.city, this.neighborhood, this.street, this.type);
-}
-
-class AddressInteractor {
-  final PostalCodeService service;
-
-  AddressInteractor(this.service);
-
-  Observable<Address> fetchAddress(String postalCode) {
-    return service.fetchAddress(postalCode).map((result) => Address(
-        result.state,
-        result.city,
-        result.neighborhood,
-        result.street,
-        result.type));
   }
 }
