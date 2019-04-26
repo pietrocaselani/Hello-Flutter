@@ -7,12 +7,6 @@ class AddressInteractor {
 
   AddressInteractor(this.service);
 
-  Stream<Address> featchAddressAsStream(String postalCode) {
-    return service
-        .fetchAddressAsStream(postalCode)
-        .map((result) => Address.fromResult(result));
-  }
-
   Observable<Address> fetchAddress(String postalCode) {
     return service
         .fetchAddress(postalCode)

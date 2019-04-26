@@ -11,4 +11,26 @@ class Address {
         neighborhood = result.neighborhood,
         street = result.street,
         type = result.type;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is Address &&
+              runtimeType == other.runtimeType &&
+              state == other.state &&
+              city == other.city &&
+              neighborhood == other.neighborhood &&
+              street == other.street &&
+              type == other.type;
+
+  @override
+  int get hashCode =>
+      state.hashCode ^
+      city.hashCode ^
+      neighborhood.hashCode ^
+      street.hashCode ^
+      type.hashCode;
+
+
+
 }
